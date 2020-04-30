@@ -38,7 +38,7 @@ if __name__ == "__main__" :
 	Tr = Trading("Trading01", my_json['ALPHA_VANTAGE_API_KEY'], my_json['STOCKS'])
 	Tr.update()	
 	# Tr.test()
-	Tr.buy()
+	# Tr.buy()
 	Tr.show()
 	print("End of this script in {} seconds.".format(time.time() - start))
 	 

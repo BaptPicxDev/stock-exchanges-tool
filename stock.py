@@ -171,27 +171,20 @@ class Stock() :
 				plt.text(x.iloc[-1] + 3, last, 'Last : '+str(last)) # Last  
 				plt.text(x.iloc[-1] + 3, low, 'Lowest : '+str(low)) # Lowest
 				plt.text(x.iloc[-1] + 3, high, 'Highest : '+str(high)) #  Highest 
-				# plt.text(x.iloc[-1] + 1, mean, 'Mean : '+str(mean)) # Mean
+				plt.text(x.iloc[-1] + 3, mean - 0.2, 'Mean : '+str(mean)) # Mean
 			if(max_min) :
 				max_x, max_y = localMaximas(x, y, n_pts=1)
 				min_x, min_y = localMinimas(x, y, n_pts=1)
 				plt.plot(max_x, max_y, 'ro') # plot the local maximums 
 				plt.plot(min_x, min_y, 'bo') # plot the local minimums
 			if(sockets) :
-				pass
+				x, mi, ma = getSockets(df)
 				# low = self.getLowSocket()
 				# high = self.getHighSocket()
-				# sns.lineplot(x=low[0], y=low[1], markers=True, dashes=False) 
-				# sns.lineplot(x=high[0], y=high[1], markers=True, dashes=False)
+				sns.lineplot(x=x, y=mi, markers=True, dashes=False) 
+				sns.lineplot(x=x, y=ma, markers=True, dashes=False)
 			if(meanTrend) :
-				mean_x = x.values.tolist()
-				mean_y = []
-				for index, item in enumerate(y) :
-					if(index == 0) :
-						mean_y.append(item)
-					else : 
-						r = np.arange(0, index+1, 1)
-						mean_y.append(y[r].mean())
+				mean_x, mean_y = meanTrend(df)
 				sns.lineplot(x=mean_x, y=mean_y)
 			# sns.lineplot(x=x, y=low) # Lowest 
 			# sns.lineplot(x=x, y=high) # Highest 
