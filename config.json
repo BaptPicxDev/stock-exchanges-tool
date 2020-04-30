@@ -1,0 +1,7 @@
+{
+	"ALPHA_VANTAGE_API_KEY" : "", 
+	"STOCKS" : 	[
+					"IBM"
+				],
+	"CURRENCY" : "USD"
+}
