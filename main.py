@@ -13,12 +13,11 @@ import json
 import matplotlib.pyplot as plt
 
 # Modules
-from access import *
-from utils import * 
 from trading import *
 
 # Environment
 plt.close('all')
+plt.style.use('seaborn')
 
 # Variables
 JSON_FILE = './data/config.json'
@@ -30,15 +29,13 @@ if __name__ == "__main__" :
 	print("Script starting : {}.".format(getDatetime()))
 	my_json = json.load(open(JSON_FILE))
 	if(getTime() >= str(OPEN_MARKET) and getTime()<=str(CLOSE_MARKET)) :
-		#print("Bourse de NY open")
-		pass
+		pass # print("Bourse de NY open")
 	else : 
-		#print("Bourse de NY close")
-		pass
+		pass # print("Bourse de NY close")
 	Tr = Trading("Trading01", my_json['ALPHA_VANTAGE_API_KEY'], my_json['STOCKS'])
 	Tr.update()	
 	# Tr.test()
-	# Tr.buy()
+	Tr.buy()
 	Tr.show()
 	print("End of this script in {} seconds.".format(time.time() - start))
 	 

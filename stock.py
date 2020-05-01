@@ -118,47 +118,25 @@ class Stock() :
 		self.setDF(df)
 
 	# Shwoing
-	def showVolumes(self) :
-		print("Showing the volume : {}.".format(self.getStockName()))
+	def show(self, buy_sell_pts=False, labels=True, line_labels=False, curve_fiting=False, interpolation=False, max_min=False, sockets=True, meanTrend=True, volumes=False) :
+		print("Showing the stock price evolution : {}.".format(self.getStockName()))
 		if(not self.getDF().empty) :
 			df = self.getDF()
-			x = df['id']
-			y = df['5. volume']
 			ticks_range = np.arange(0, df.shape[0], 5)
-			
 			plt.figure(figsize=(19, 11))
-			plt.title("Representation of {} volume evolution the {}.".format(self.getStockName(),  self.getDate()))
-			plt.xticks(ticks_range, df['time'][ticks_range], rotation='vertical')
-			plt.xlabel("Time")
-			plt.ylabel("Volume")
-			sns.lineplot(x=x, y=y, markers=True, dashes=False)
-			plt.show()
-
-	def show(self, buy_sell_pts=False, labels=True, curve_fiting=False, interpolation=False, max_min=False, sockets=True, meanTrend=True) :
-		print("Showing the stock : {}.".format(self.getStockName()))
-		if(not self.getDF().empty) :
-			df = self.getDF()
-			x = df['id']
-			y = df['4. close']
-			ticks_range = np.arange(0, df.shape[0], 5)
-
-			last = df['4. close'].iloc[-1]
-			mean = df['4. close'].mean() 
-			high = df['2. high'].max()
-			low = df['3. low'].min()
-			
-			plt.figure(figsize=(19, 11))
+			# ax = plt.axes(facecolor='#E6E6E6')
+			# ax.set_axisbelow(True)
 			plt.title("Representation of {} stocks evolution the {}.".format(self.getStockName(),  self.getDate()))
 			plt.xticks(ticks_range, df['time'][ticks_range], rotation='vertical')
 			plt.xlabel("Time")
 			plt.ylabel("Stock price")
-			plt.ylim((low-1, high+1))
-			sns.lineplot(x=x, y=y, markers=True, dashes=False)
+			plt.ylim((df['3. low'].min()-1, df['2. high'].max()+1))
+			sns.lineplot(x=df['id'], y=df['4. close'], markers=True, dashes=False)
 			if(curve_fiting) :
-				predict_x, predict_y, coefs = getCurvePolyFit(x, y, degree=15)
+				predict_x, predict_y, coefs = getCurvePolyFit(df['id'], df['4. close'], degree=15)
 				sns.lineplot(x=predict_x, y=predict_y, markers=True, dashes=False) # Curve fitting
 			if(interpolation) :
-				interp_x, interp_y = getCurveInterp(x, y)
+				interp_x, interp_y = getCurveInterp(df['id'], df['4. close'])
 				sns.lineplot(x=interp_x, y=interp_y, markers=True, dashes=False) # Curve interpolation 
 			if(buy_sell_pts == True) :
 				x_b = self.getAccount().getBuyingIds() 
@@ -168,27 +146,34 @@ class Stock() :
 				plt.plot(x_b, y_b, 'rx') # plot buy points
 				plt.plot(x_s, y_s, 'gx') # plot sell points 
 			if(labels) :
-				plt.text(x.iloc[-1] + 3, last, 'Last : '+str(last)) # Last  
-				plt.text(x.iloc[-1] + 3, low, 'Lowest : '+str(low)) # Lowest
-				plt.text(x.iloc[-1] + 3, high, 'Highest : '+str(high)) #  Highest 
-				plt.text(x.iloc[-1] + 3, mean - 0.2, 'Mean : '+str(mean)) # Mean
+				plt.text(df['id'].iloc[-1] + 3, df['4. close'].iloc[-1], 'Last : '+str(df['4. close'].iloc[-1])) # Last
+				plt.text(df['id'].iloc[-1] + 3, df['3. low'].min(), 'Lowest : '+str(df['3. low'].min())) # Lowest
+				plt.text(df['id'].iloc[-1] + 3, df['2. high'].max(), 'Highest : '+str(df['2. high'].max())) #  Highest
+				# plt.text(df['id'].iloc[-1] + 3, df['4. close'].iloc[-1]  - 0.2, 'Mean : '+str(df['4. close'].mean())) # Mean
+			if(line_labels) :
+				sns.lineplot(x=df['id'], y=df['3. low'].min()) # Lowest
+				sns.lineplot(x=df['id'], y=df['2. high'].max()) # Highest
+				sns.lineplot(x=df['id'], y=df['4. close'].mean()) # Mean
 			if(max_min) :
-				max_x, max_y = localMaximas(x, y, n_pts=1)
-				min_x, min_y = localMinimas(x, y, n_pts=1)
+				max_x, max_y = localMaximas(df['id'], df['4. close'], n_pts=1)
+				min_x, min_y = localMinimas(df['id'], df['4. close'], n_pts=1)
 				plt.plot(max_x, max_y, 'ro') # plot the local maximums 
 				plt.plot(min_x, min_y, 'bo') # plot the local minimums
 			if(sockets) :
-				x, mi, ma = getSockets(df)
-				# low = self.getLowSocket()
-				# high = self.getHighSocket()
-				sns.lineplot(x=x, y=mi, markers=True, dashes=False) 
-				sns.lineplot(x=x, y=ma, markers=True, dashes=False)
+				mi, ma, _, _, _, _ = socketTrends(df)
+				if mi.size!= 0:
+					sns.lineplot(x=df['id'], y=mi, markers=True, dashes=False) 
+				if ma.size!= 0:
+					sns.lineplot(x=df['id'], y=ma, markers=True, dashes=False)
 			if(meanTrend) :
 				mean_x, mean_y = meanTrend(df)
 				sns.lineplot(x=mean_x, y=mean_y)
-			# sns.lineplot(x=x, y=low) # Lowest 
-			# sns.lineplot(x=x, y=high) # Highest 
-			# sns.lineplot(x=x, y=mean) # Mean  
+			if(volumes) :
+				V_std = (df['5. volume'] - df['5. volume'].min()) / (df['5. volume'].max() - df['5. volume'].min()) * 2
+				V_scaled = V_std * (df['4. close'].max() - df['4. close'].min()) + df['4. close'].min() - 1
+				plt.text(df['id'].iloc[-1] + 3, V_scaled.max(), 'Max Volume : '+str(df['5. volume'].max())) # Last  
+				plt.text(df['id'].iloc[-1] + 3, V_scaled.min(), 'Min Volume : '+str(df['5. volume'].min())) # Lowest
+				sns.lineplot(x=df['id'], y=V_scaled)
 			plt.show()
 		else :
 			print("Can't draw the figure.")
@@ -197,8 +182,6 @@ class Stock() :
 	def buyStrategy(self, sell_threshold=0.002) :
 		print("Trying to buy some "+self.getStockName()+" stocks.")
 		df = self.getDF()
-		x = df['id'].values
-		y = df['4. close'].values
 		if(self.getAccount().checkStock()) :
 			buy_flag = False
 		else :
@@ -209,20 +192,26 @@ class Stock() :
 				pass
 			else : 
 				r = np.arange(0, index_item+1, 1)
-				max_x, max_y = localMaximas(x[r], y[r])
-				min_x, min_y = localMinimas(x[r], y[r])
+				max_x, max_y = localMaximas(df['id'][r].values, df['4. close'][r].values)
+				min_x, min_y = localMinimas(df['id'][r].values, df['4. close'][r].values)
 				if(buy_flag==True) : # If the buying_flag is set to True.
 					if(previous_item<item['4. close']): # Ascending curve.
 						if(min_y.size!=0 and (max_y.size==0 or max_x[-1]<min_x[-1])) : # The last local min/max is a minimum.
 							if(buyLimit(time=item['time'])) : # If the last time to buy isn't overtaken.
-								if(item['4. close'] < y[r].mean() and item['4. close'] <= self.getDayAgo()['close']) : # filter
+								new_values_y_min, new_values_y_max, min_b, min_b, max_m, max_b = socketTrends(df.loc[df['id'].isin(r)])
+								if(min_b == 0 or min_b == 0 or max_m == 0 or max_b == 0 ) : 
+									pass
+								elif(item['4. close'] < df['4. close'][r].mean() and item['4. close'] <= self.getDayAgo()['close'] and item['4. close'] < max_m * item['id'] + max_b) : # filter
 									self.getAccount().buy(item)
 									buy_flag = False
 				elif(buy_flag==False) :
 					if(previous_item>item['4. close']) : # Descending curve and self.getLastBuyingPrice()!=None 
 						if(max_y.size!=0 and (min_y.size==0 or max_x[-1]>min_x[-1])) : # The last local min/max is a maximum 
 							if(self.getAccount().checkStock()) : # We have something to sell and the buying_flag is set to False 
-								if(item['4. close'] >= (1 + sell_threshold) * self.getAccount().getLastBuyingPrice()) : 
+								new_values_y_min, new_values_y_max, min_b, min_b, max_m, max_b = socketTrends(df.loc[df['id'].isin(r)])
+								if(min_b == 0 or min_b == 0 or max_m == 0 or max_b == 0 ) : 
+									pass
+								elif(item['4. close'] >= (1 + sell_threshold) * self.getAccount().getLastBuyingPrice() and item['4. close'] > max_m * item['id'] + max_b) : 
 									self.getAccount().sell(item)
 									buy_flag = True
 				previous_item = item['4. close']
@@ -230,7 +219,7 @@ class Stock() :
 	# Test function
 	def test(self) :
 		print("Test on the stock : {}.".format(self.getStockName()))
-		self.getTrend()
+		socketTrends(self.getDF())
 
 
 

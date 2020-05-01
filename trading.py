@@ -58,7 +58,7 @@ class Trading :
 
 	def show(self) : 
 		for stock in self.getStocks():
-			stock.show(curve_fiting=False, buy_sell_pts=True, sockets=True, meanTrend=False)
+			stock.show(curve_fiting=False, buy_sell_pts=True, sockets=True, meanTrend=False, volumes=False)
 
 	def buy(self) : 
 		for stock in self.getStocks():
@@ -66,4 +66,4 @@ class Trading :
 
 	def test(self) :
 		for stock in self.getStocks():
-			stock.showVolumes()
+			stock.test()
