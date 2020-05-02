@@ -198,7 +198,7 @@ class Stock() :
 								new_values_y_min, new_values_y_max, lr_min, lr_max = socketTrends(df.loc[df['id'].isin(r)])
 								if(lr_min == 0 or new_values_y_min == np.array([])) : 
 									pass
-								elif(item['4. close'] < lr_min.predict(np.array(item['id']).reshape(-1, 1))[0][0]) : # filter
+								elif(item['4. close'] <= df.loc[df['id'].isin(r)]['4. close'].quantile(0.25) and item['4. close'] < lr_min.predict(np.array(item['id']).reshape(-1, 1))[0][0]) : # filter
 									self.getAccount().buy(item)
 									buy_flag = False
 				elif(buy_flag==False) :
@@ -208,7 +208,7 @@ class Stock() :
 								new_values_y_min, new_values_y_max, lr_min, lr_max = socketTrends(df.loc[df['id'].isin(r)])
 								if(lr_max == 0 or new_values_y_max == np.array([])) : 
 									pass
-								elif(item['4. close'] >= self.getAccount().getLastBuyingPrice() and item['4. close'] > lr_max.predict(np.array(item['id']).reshape(-1, 1))[0][0]) : #filter 
+								elif(item['4. close'] >= df.loc[df['id'].isin(r)]['4. close'].quantile(0.75) and item['4. close'] >= self.getAccount().getLastBuyingPrice() and item['4. close'] >= 0.85 * lr_max.predict(np.array(item['id']).reshape(-1, 1))[0][0]) : #filter
 									self.getAccount().sell(item)
 									buy_flag = True
 				previous_item = item['4. close']

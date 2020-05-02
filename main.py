@@ -39,3 +39,4 @@ if __name__ == "__main__" :
 	Tr.show()
 	print("End of this script in {} seconds.".format(time.time() - start))
 	 
+	 

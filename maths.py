@@ -78,8 +78,8 @@ def socketTrends(df, space_separation=6) :
 		minis, maxis, start = [], [], 0
 		for i_range in range(int(df.shape[0]/4), df.shape[0], int(df.shape[0]/space_separation)) :
 			r = np.arange(start, i_range, 1)
-			min_x, min_y = localMinimas(df['id'][r].values, df['4. close'][r].values, n_pts=1)
-			max_x, max_y = localMaximas(df['id'][r].values, df['4. close'][r].values, n_pts=1)
+			min_x, min_y = localMinimas(df['id'][r].values, df['4. close'][r].values, n_pts=5)
+			max_x, max_y = localMaximas(df['id'][r].values, df['4. close'][r].values, n_pts=5)
 			mini, maxi = [(min_x[i], m) for i, m in enumerate(min_y)], [(max_x[i], m) for i, m in enumerate(max_y)]
 			items_min = sorted(mini, key=itemgetter(1))
 			items_max = sorted(maxi, key=itemgetter(1), reverse=True)
@@ -88,20 +88,18 @@ def socketTrends(df, space_separation=6) :
 			if(len(items_max)>0) : 
 				maxis.append(items_max[0]) 
 			start = i_range
-		select_min = sorted(minis, key=itemgetter(1))
-		select_max = sorted(maxis, key=itemgetter(1), reverse=True)
-		min_x, min_y = [i[0] for i in select_min], [i[1] for i in select_min]
-		max_x, max_y = [i[0] for i in select_max], [i[1] for i in select_max]
+		min_x, min_y = [i[0] for i in minis], [i[1] for i in minis]
+		max_x, max_y = [i[0] for i in maxis], [i[1] for i in maxis]
 		min_x, min_y = np.array(min_x), np.array(min_y)
 		max_x, max_y = np.array(max_x), np.array(max_y)
-		if(len(select_min) >= 2) :
+		if(len(minis) >= 2) :
 			lr_min = LinearRegression()
 			lr_min.fit(min_x.reshape(-1, 1), min_y.reshape(-1, 1))
 			new_values_y_min = lr_min.predict(df['id'].values.reshape(-1, 1))
 		else :
 			new_values_y_min, lr_min = np.array([]), 0
 
-		if(len(select_max) >+ 2) :
+		if(len(maxis) >+ 2) :
 			lr_max = LinearRegression()
 			lr_max.fit(max_x.reshape(-1, 1), max_y.reshape(-1, 1))
 			new_values_y_max = lr_max.predict(df['id'].values.reshape(-1, 1))
