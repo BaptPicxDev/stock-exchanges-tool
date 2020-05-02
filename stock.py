@@ -122,14 +122,10 @@ class Stock() :
 		print("Showing the stock price evolution : {}.".format(self.getStockName()))
 		if(not self.getDF().empty) :
 			df = self.getDF()
-			ticks_range = np.arange(0, df.shape[0], 5)
+			ticks_range = np.arange(0, df.shape[0], 10)
 			plt.figure(figsize=(19, 11))
-			# ax = plt.axes(facecolor='#E6E6E6')
-			# ax.set_axisbelow(True)
 			plt.title("Representation of {} stocks evolution the {}.".format(self.getStockName(),  self.getDate()))
 			plt.xticks(ticks_range, df['time'][ticks_range], rotation='vertical')
-			plt.xlabel("Time")
-			plt.ylabel("Stock price")
 			plt.ylim((df['3. low'].min()-1, df['2. high'].max()+1))
 			sns.lineplot(x=df['id'], y=df['4. close'], markers=True, dashes=False)
 			if(curve_fiting) :
@@ -139,9 +135,8 @@ class Stock() :
 				interp_x, interp_y = getCurveInterp(df['id'], df['4. close'])
 				sns.lineplot(x=interp_x, y=interp_y, markers=True, dashes=False) # Curve interpolation 
 			if(buy_sell_pts == True) :
-				x_b = self.getAccount().getBuyingIds() 
+				x_b, x_s = self.getAccount().getBuyingIds(), self.getAccount().getSellingIds()
 				y_b = [float(df[df['id'] == item]['4. close'].values) for item in x_b]
-				x_s = self.getAccount().getSellingIds()
 				y_s = [float(df[df['id'] == item]['4. close'].values)  for item in x_s]
 				plt.plot(x_b, y_b, 'rx') # plot buy points
 				plt.plot(x_s, y_s, 'gx') # plot sell points 
@@ -160,11 +155,11 @@ class Stock() :
 				plt.plot(max_x, max_y, 'ro') # plot the local maximums 
 				plt.plot(min_x, min_y, 'bo') # plot the local minimums
 			if(sockets) :
-				mi, ma, _, _, _, _ = socketTrends(df)
+				mi, ma, _, _ = socketTrends(df)
 				if mi.size!= 0:
-					sns.lineplot(x=df['id'], y=mi, markers=True, dashes=False) 
+					sns.lineplot(x=df['id'], y=mi.reshape(1, -1).tolist()[0], markers=True, dashes=False) 
 				if ma.size!= 0:
-					sns.lineplot(x=df['id'], y=ma, markers=True, dashes=False)
+					sns.lineplot(x=df['id'], y=ma.reshape(1, -1).tolist()[0], markers=True, dashes=False)
 			if(meanTrend) :
 				mean_x, mean_y = meanTrend(df)
 				sns.lineplot(x=mean_x, y=mean_y)
@@ -174,6 +169,8 @@ class Stock() :
 				plt.text(df['id'].iloc[-1] + 3, V_scaled.max(), 'Max Volume : '+str(df['5. volume'].max())) # Last  
 				plt.text(df['id'].iloc[-1] + 3, V_scaled.min(), 'Min Volume : '+str(df['5. volume'].min())) # Lowest
 				sns.lineplot(x=df['id'], y=V_scaled)
+			plt.xlabel("Time")
+			plt.ylabel("Stock price")
 			plt.show()
 		else :
 			print("Can't draw the figure.")
@@ -198,20 +195,20 @@ class Stock() :
 					if(previous_item<item['4. close']): # Ascending curve.
 						if(min_y.size!=0 and (max_y.size==0 or max_x[-1]<min_x[-1])) : # The last local min/max is a minimum.
 							if(buyLimit(time=item['time'])) : # If the last time to buy isn't overtaken.
-								new_values_y_min, new_values_y_max, min_b, min_b, max_m, max_b = socketTrends(df.loc[df['id'].isin(r)])
-								if(min_b == 0 or min_b == 0 or max_m == 0 or max_b == 0 ) : 
+								new_values_y_min, new_values_y_max, lr_min, lr_max = socketTrends(df.loc[df['id'].isin(r)])
+								if(lr_min == 0 or new_values_y_min == np.array([])) : 
 									pass
-								elif(item['4. close'] < df['4. close'][r].mean() and item['4. close'] <= self.getDayAgo()['close'] and item['4. close'] < max_m * item['id'] + max_b) : # filter
+								elif(item['4. close'] < lr_min.predict(np.array(item['id']).reshape(-1, 1))[0][0]) : # filter
 									self.getAccount().buy(item)
 									buy_flag = False
 				elif(buy_flag==False) :
 					if(previous_item>item['4. close']) : # Descending curve and self.getLastBuyingPrice()!=None 
 						if(max_y.size!=0 and (min_y.size==0 or max_x[-1]>min_x[-1])) : # The last local min/max is a maximum 
 							if(self.getAccount().checkStock()) : # We have something to sell and the buying_flag is set to False 
-								new_values_y_min, new_values_y_max, min_b, min_b, max_m, max_b = socketTrends(df.loc[df['id'].isin(r)])
-								if(min_b == 0 or min_b == 0 or max_m == 0 or max_b == 0 ) : 
+								new_values_y_min, new_values_y_max, lr_min, lr_max = socketTrends(df.loc[df['id'].isin(r)])
+								if(lr_max == 0 or new_values_y_max == np.array([])) : 
 									pass
-								elif(item['4. close'] >= (1 + sell_threshold) * self.getAccount().getLastBuyingPrice() and item['4. close'] > max_m * item['id'] + max_b) : 
+								elif(item['4. close'] >= self.getAccount().getLastBuyingPrice() and item['4. close'] > lr_max.predict(np.array(item['id']).reshape(-1, 1))[0][0]) : #filter 
 									self.getAccount().sell(item)
 									buy_flag = True
 				previous_item = item['4. close']

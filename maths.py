@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema
 from operator import itemgetter, attrgetter
+from sklearn.linear_model import LinearRegression, RANSACRegressor
 
 # Min and Max 
 def localMaximas(x, y, n_pts=2) :
@@ -39,10 +40,9 @@ def localMinimas(x, y, n_pts=2) :
 
 # Curves
 def get1DLine(pts_x, pts_y) :
-	# equation  of an equation, degree 1 : y = a*x + b
 	m = (pts_y[1] - pts_y[0])/(pts_x[1] - pts_x[0])
 	b = pts_y[0] - m * pts_x[0] 
-	return m, b
+	return m, b # equation  of an equation, degree 1 : y = a*x + b
 
 
 def getCurvePolyFit(x, y, degree=1, step=5) :
@@ -62,8 +62,7 @@ def getCurveInterp(x, y, step=5) :
 
 # Trends
 def meanTrend(df) :
-	mean_x = df['id'].values.tolist()
-	mean_y = []
+	mean_x, mean_y = df['id'].values.tolist(), [] 
 	for index, item in enumerate(y) :
 		if(index == 0) :
 			mean_y.append(item)
@@ -74,7 +73,7 @@ def meanTrend(df) :
 
 def socketTrends(df, space_separation=6) :
 	if(df.shape[0]<space_separation) :
-		return np.array([]), np.array([]), 0, 0, 0, 0
+		return np.array([]), np.array([]), 0, 0
 	else : 
 		minis, maxis, start = [], [], 0
 		for i_range in range(int(df.shape[0]/4), df.shape[0], int(df.shape[0]/space_separation)) :
@@ -83,31 +82,32 @@ def socketTrends(df, space_separation=6) :
 			max_x, max_y = localMaximas(df['id'][r].values, df['4. close'][r].values, n_pts=1)
 			mini, maxi = [(min_x[i], m) for i, m in enumerate(min_y)], [(max_x[i], m) for i, m in enumerate(max_y)]
 			items_min = sorted(mini, key=itemgetter(1))
-			items_max = sorted(maxi, key=itemgetter(1), reverse=True) 
+			items_max = sorted(maxi, key=itemgetter(1), reverse=True)
 			if(len(items_min)>0) : 
 				minis.append(items_min[0])
 			if(len(items_max)>0) : 
 				maxis.append(items_max[0]) 
 			start = i_range
-		print("Minis : {}".format(minis))
-		print("Maxis : {}".format(maxis))
-		select_min = sorted(minis, key=itemgetter(1))[0:2]
-		select_max = sorted(maxis, key=itemgetter(1), reverse=True)[0:2]
-		print("Selected minis : {}".format(select_min))
-		print("Selected maxis : {}".format(select_max))
+		select_min = sorted(minis, key=itemgetter(1))
+		select_max = sorted(maxis, key=itemgetter(1), reverse=True)
 		min_x, min_y = [i[0] for i in select_min], [i[1] for i in select_min]
 		max_x, max_y = [i[0] for i in select_max], [i[1] for i in select_max]
-		if(len(min_x) == 2 and len(min_y) == 2) :
-			min_m, min_b = get1DLine(min_x, min_y)
-			new_values_y_min = min_m * df['id'].values + min_b
+		min_x, min_y = np.array(min_x), np.array(min_y)
+		max_x, max_y = np.array(max_x), np.array(max_y)
+		if(len(select_min) >= 2) :
+			lr_min = LinearRegression()
+			lr_min.fit(min_x.reshape(-1, 1), min_y.reshape(-1, 1))
+			new_values_y_min = lr_min.predict(df['id'].values.reshape(-1, 1))
+		else :
+			new_values_y_min, lr_min = np.array([]), 0
+
+		if(len(select_max) >+ 2) :
+			lr_max = LinearRegression()
+			lr_max.fit(max_x.reshape(-1, 1), max_y.reshape(-1, 1))
+			new_values_y_max = lr_max.predict(df['id'].values.reshape(-1, 1))
 		else : 
-			new_values_y_min, min_m, min_b  = np.array([]), 0, 0 
-		if(len(max_x) == 2 and len(max_y) == 2) :
-			max_m, max_b = get1DLine(max_x, max_y)
-			new_values_y_max = max_m * df['id'].values + max_b
-		else : 
-			new_values_y_max, max_m, max_b  = np.array([]), 0, 0 
-		return new_values_y_min, new_values_y_max, min_b, min_b, max_m, max_b
+			new_values_y_max, lr_max = np.array([]), 0
+		return new_values_y_min, new_values_y_max, lr_min, lr_max
 
 
 # Predictions

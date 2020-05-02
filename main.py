@@ -17,7 +17,7 @@ from trading import *
 
 # Environment
 plt.close('all')
-plt.style.use('seaborn')
+# plt.style.use('seaborn')
 
 # Variables
 JSON_FILE = './data/config.json'
